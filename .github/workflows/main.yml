@@ -1,0 +1,38 @@
+name: Ubuntu RDP Tunnel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-rdp-tunnel:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v2
+
+    - name: Download playit for Linux
+      run: |
+        wget https://github.com/playit-cloud/playit-agent/releases/download/v0.15.26/playit-linux-x86_64 -O ~/playit
+        chmod +x ~/playit
+
+    - name: Install XFCE desktop and XRDP
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y xfce4 xfce4-goodies xrdp
+        sudo systemctl enable xrdp
+        sudo systemctl start xrdp
+
+    - name: Set password for runner user
+      run: echo 'runner:p@ssw0rd!' | sudo chpasswd
+
+    - name: Configure XRDP session
+      run: echo "xfce4-session" > ~/.xsession
+
+    - name: Authenticate playit
+      env:
+        PLAYIT_AUTH_KEY: ${{ secrets.PL }}
+      run: ~/playit --secret $PLAYIT_AUTH_KEY
+
+    - name: Run playit tunnel
+      run: ~/playit
